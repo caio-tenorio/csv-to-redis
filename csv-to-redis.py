@@ -36,13 +36,8 @@ def which_db(csv_file):
 
 def main():
     args_len = len(sys.argv)
-    csv_file = sys.argv[1].split("/")[-1][:-4]
-    db_name = which_db(csv_file)
-
     if args_len < 2:
-        sys.exit(
-            "Usage: %s file.csv key key key..."
-            % __file__)
+        sys.exit("Utilize %s path/to/file.csv key_index key_index key_index..." % __file__)
     elif args_len == 2:
         key_index = sys.argv[2]
     else:
@@ -51,6 +46,9 @@ def main():
             if i != 0 and i != 1:
                 key_index.append(sys.argv[i])
     
+    csv_file = sys.argv[1].split("/")[-1][:-4]
+    db_name = which_db(csv_file)
+
     try:
         data = read_csv_data(sys.argv[1])
         conn = redis.Redis(REDIS_HOST)
