@@ -32,8 +32,7 @@ def store_data(conn, data, key_index, db_name):
             dict_to_store[header[count]] = attribute
             count = count + 1
         dict_to_redis_hset(conn, ('testando:' + str(_id)), dict_to_store)
-        _id = _id + 1
-    print (dict_to_store) 
+        _id = _id + 1 
     return data        
 
 def dict_to_redis_hset(r, hkey, dict_to_store):
