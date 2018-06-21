@@ -1,7 +1,7 @@
 import csv, redis, json
 import sys
 
-REDIS_HOST = '172.17.0.2'
+REDIS_HOST = 'localhost'
 ORGAOS = "orgaos-II"
 SUGESTAO = "sugestao-I"
 TURMAS_COMPONETES = "turmas-componentes-III"
@@ -11,7 +11,7 @@ def read_csv_data(csv_file):
         csv_data = csv.reader(csvf)
         return [(r) for r in csv_data]
 
-def build_key(key_index, db_name):
+def build_key(key_index, db_name, line):
     if type(key_index) != list:
         key = db_name + "_" + line[int(key_index)]
     else:
@@ -21,19 +21,19 @@ def build_key(key_index, db_name):
     return key 
 
 def store_data(conn, data, key_index, db_name):
-    r = redis.StrictRedis(host='localhost')
     dict_to_store = {}
     _id = 1
     header = data[0]
     for line in data:
-        key = build_key(key_index, db_name)
+        key = build_key(key_index, db_name, line)
         count = 0
         dict_to_store["key"] = key
         for attribute in line:
             dict_to_store[header[count]] = attribute
             count = count + 1
-        dict_to_redis_hset(r, 'testando:' + str(_id), dict_to_store)
-        _id = _id + 1 
+        dict_to_redis_hset(conn, ('testando:' + str(_id)), dict_to_store)
+        _id = _id + 1
+    print (dict_to_store) 
     return data        
 
 def dict_to_redis_hset(r, hkey, dict_to_store):
@@ -66,8 +66,7 @@ def main():
 
     try:
         data = read_csv_data(sys.argv[1])
-        print (data)
-        conn = redis.Redis(REDIS_HOST)
+        conn = redis.StrictRedis(host=REDIS_HOST)
         entry_data = (json.dumps(store_data(conn, data, key_index, db_name)))
         print ("Dados registrados com sucesso!")
         pass
