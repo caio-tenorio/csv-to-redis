@@ -11,18 +11,33 @@ def read_csv_data(csv_file):
         csv_data = csv.reader(csvf)
         return [(r) for r in csv_data]
 
-def store_data(conn, data, key_index, db_name):
+def build_key(key_index, db_name):
     if type(key_index) != list:
-        for line in data:
-            key = db_name + "_" + line[int(key_index)]
-            conn.setnx(key, line)    
+        key = db_name + "_" + line[int(key_index)]
     else:
-        for line in data:
-            key = db_name + "_"
-            for c in key_index:
-                key = key + line[int(c)]
-            conn.setnx(key, line)
+        key = db_name + "_"
+        for c in key_index:
+            key = key + line[int(c)]
+    return key 
+
+def store_data(conn, data, key_index, db_name):
+    r = redis.StrictRedis(host='localhost')
+    dict_to_store = {}
+    _id = 1
+    header = data[0]
+    for line in data:
+        key = build_key(key_index, db_name)
+        count = 0
+        dict_to_store["key"] = key
+        for attribute in line:
+            dict_to_store[header[count]] = attribute
+            count = count + 1
+        dict_to_redis_hset(r, 'testando:' + str(_id), dict_to_store)
+        _id = _id + 1 
     return data        
+
+def dict_to_redis_hset(r, hkey, dict_to_store):
+    return all([r.hset(hkey, k, v) for k, v in dict_to_store.items()])
 
 def which_db(csv_file):
     db = ""
@@ -51,6 +66,7 @@ def main():
 
     try:
         data = read_csv_data(sys.argv[1])
+        print (data)
         conn = redis.Redis(REDIS_HOST)
         entry_data = (json.dumps(store_data(conn, data, key_index, db_name)))
         print ("Dados registrados com sucesso!")
