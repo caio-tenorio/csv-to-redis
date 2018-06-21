@@ -51,9 +51,9 @@ def which_db(csv_file):
 
 def main():
     args_len = len(sys.argv)
-    if args_len < 3:
+    if args_len < 2:
         sys.exit("Utilize %s path/to/file.csv key_index key_index key_index..." % __file__)
-    elif args_len == 3:
+    elif args_len == 2:
         key_index = sys.argv[2]
     else:
         key_index = []
