@@ -11,42 +11,57 @@ def read_csv_data(csv_file):
         csv_data = csv.reader(csvf)
         return [(r) for r in csv_data]
 
-def build_key(key_index, db_name, line):
+def build_key(key_index, db_key, line):
     if type(key_index) != list:
-        key = db_name + "_" + line[int(key_index)]
+        key = ":" + line[int(key_index)]
     else:
-        key = db_name + "_"
+        key = ":"
         for c in key_index:
-            key = key + line[int(c)]
+            key_value = str(line[int(c)])
+            if key_value != "2018.1" and key_value != "2018.2":
+                key_value = key_value.replace(".","")
+            key = key + key_value + ":"
+        key = key[:-1]
     return key 
 
-def store_data(conn, data, key_index, db_name):
+def store_data(conn, data, key_index, db_key):
     dict_to_store = {}
-    _id = 1
     header = data[0]
+    header_clean = []
+    for field in header:
+        field = field.replace('"','')
+        header_clean.append(field)
     for line in data:
-        key = build_key(key_index, db_name, line)
+        key = build_key(key_index, db_key, line)
         count = 0
-        dict_to_store["key"] = key
+        dict_to_store["key"] = key[1:]
         for attribute in line:
-            dict_to_store[header[count]] = attribute
+            if attribute != "2018.1" and attribute != "2018.2":
+                dict_to_store[header_clean[count]] = attribute.replace(".", "")
+            else:
+                dict_to_store[header_clean[count]] = attribute
             count = count + 1
-        dict_to_redis_hset(conn, ('testando:' + str(_id)), dict_to_store)
-        _id = _id + 1 
+        dict_to_redis_hset(conn, (db_key[1] + str(key)), dict_to_store)
     return data        
 
 def dict_to_redis_hset(r, hkey, dict_to_store):
     return all([r.hset(hkey, k, v) for k, v in dict_to_store.items()])
 
 def which_db(csv_file):
-    db = ""
+    db_key = []
     if csv_file == ORGAOS:
         db = "orgaos"
+        namespace = "OrgaoOferta"
+        db_key = [db, namespace]
     elif csv_file == SUGESTAO:
         db = "sugestao"
+        namespace = "Sugestao"
+        db_key = [db, namespace]
     elif csv_file == TURMAS_COMPONETES:
         db = "turmas-componentes"
-    return db
+        namespace = "TurmaOferta"
+        db_key = [db, namespace]
+    return db_key
 
 def main():
     args_len = len(sys.argv)
@@ -59,19 +74,17 @@ def main():
         for i in range (args_len):
             if i != 0 and i != 1:
                 key_index.append(sys.argv[i])
-    
     csv_file = sys.argv[1].split("/")[-1][:-4]
-    db_name = which_db(csv_file)
+    db_key = which_db(csv_file)
 
     try:
         data = read_csv_data(sys.argv[1])
         conn = redis.StrictRedis(host=REDIS_HOST)
-        entry_data = (json.dumps(store_data(conn, data, key_index, db_name)))
+        entry_data = (json.dumps(store_data(conn, data, key_index, db_key)))
         print ("Dados registrados com sucesso!")
         pass
     except Exception as e:
         raise print("Ocorreu um problema...")
-    
 
 if '__main__' == __name__:
     main()
